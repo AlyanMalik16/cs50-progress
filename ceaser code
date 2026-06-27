@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
+
+char rotate(char c, int key);
+
+int main(void)
+{
+    int key;
+
+    // Ask user for key (since Programiz cannot use argv)
+    printf("Enter key: ");
+    scanf("%d", &key);
+
+    // Clear leftover newline from input buffer
+    getchar();
+
+    // Ask for plaintext
+    char plaintext[1000];
+    printf("plaintext:  ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+
+    // Remove newline
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    // Print ciphertext
+    printf("ciphertext: ");
+
+    for (int i = 0; i < strlen(plaintext); i++)
+    {
+        printf("%c", rotate(plaintext[i], key));
+    }
+
+    printf("\n");
+    return 0;
+}
+
+char rotate(char c, int key)
+{
+    if (isupper(c))
+    {
+        return (char)((c - 'A' + key) % 26 + 'A');
+    }
+    else if (islower(c))
+    {
+        return (char)((c - 'a' + key) % 26 + 'a');
+    }
+    else
+    {
+        return c;
+    }
+}
