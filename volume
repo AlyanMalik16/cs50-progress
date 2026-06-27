@@ -1,0 +1,59 @@
+#include <stdio.h>
+#include <stdint.h>
+
+typedef uint8_t BYTE;
+typedef int16_t SAMPLE;
+
+int main(void)
+{
+    char input_file[100];
+    char output_file[100];
+    float factor;
+
+    // Ask user for input WAV file
+    printf("Input WAV file name: ");
+    scanf("%s", input_file);
+
+    // Ask user for output WAV file name
+    printf("Output WAV file name: ");
+    scanf("%s", output_file);
+
+    // Ask user for volume factor
+    printf("Volume factor: ");
+    scanf("%f", &factor);
+
+    // Open files
+    FILE *inptr = fopen(input_file, "rb");
+    FILE *outptr = fopen(output_file, "wb");
+
+    if (inptr == NULL)
+    {
+        printf("Could not open input file.\n");
+        return 1;
+    }
+
+    if (outptr == NULL)
+    {
+        printf("Could not create output file.\n");
+        return 1;
+    }
+
+    // Copy header (44 bytes)
+    BYTE header[44];
+    fread(header, sizeof(BYTE), 44, inptr);
+    fwrite(header, sizeof(BYTE), 44, outptr);
+
+    // Process samples
+    SAMPLE sample;
+    while (fread(&sample, sizeof(SAMPLE), 1, inptr))
+    {
+        SAMPLE new_sample = sample * factor;
+        fwrite(&new_sample, sizeof(SAMPLE), 1, outptr);
+    }
+
+    fclose(inptr);
+    fclose(outptr);
+
+    printf("Done! Volume adjusted.\n");
+    return 0;
+}
