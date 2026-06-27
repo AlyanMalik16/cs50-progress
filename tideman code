@@ -1,0 +1,191 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define MAX_CANDIDATES 9
+#define MAX_VOTERS 100
+
+int preferences[MAX_CANDIDATES][MAX_CANDIDATES];
+bool locked[MAX_CANDIDATES][MAX_CANDIDATES];
+
+typedef struct
+{
+    char name[50];
+    int winner;
+    int loser;
+} pair;
+
+char candidates[MAX_CANDIDATES][50];
+pair pairs[MAX_CANDIDATES * MAX_CANDIDATES];
+
+int candidate_count;
+int voter_count;
+int pair_count;
+
+bool vote(int rank[], int rank_index, char name[]);
+void record_preferences(int rank[]);
+void add_pairs(void);
+void sort_pairs(void);
+bool creates_cycle(int winner, int loser);
+void lock_pairs(void);
+void print_winner(void);
+
+int main(void)
+{
+    printf("Number of candidates: ");
+    scanf("%d", &candidate_count);
+    getchar();
+
+    for (int i = 0; i < candidate_count; i++)
+    {
+        printf("Candidate %d name: ", i + 1);
+        fgets(candidates[i], sizeof(candidates[i]), stdin);
+        candidates[i][strcspn(candidates[i], "\n")] = '\0';
+    }
+
+    printf("Number of voters: ");
+    scanf("%d", &voter_count);
+    getchar();
+
+    for (int i = 0; i < candidate_count; i++)
+        for (int j = 0; j < candidate_count; j++)
+            preferences[i][j] = locked[i][j] = false;
+
+    for (int i = 0; i < voter_count; i++)
+    {
+        int ranks[MAX_CANDIDATES];
+
+        printf("\nVoter %d:\n", i + 1);
+        for (int j = 0; j < candidate_count; j++)
+        {
+            char name[50];
+            printf("Rank %d: ", j + 1);
+            fgets(name, sizeof(name), stdin);
+            name[strcspn(name, "\n")] = '\0';
+
+            if (!vote(ranks, j, name))
+            {
+                printf("Invalid vote.\n");
+                return 1;
+            }
+        }
+
+        record_preferences(ranks);
+    }
+
+    add_pairs();
+    sort_pairs();
+    lock_pairs();
+    print_winner();
+
+    return 0;
+}
+
+bool vote(int rank[], int rank_index, char name[])
+{
+    for (int i = 0; i < candidate_count; i++)
+    {
+        if (strcmp(candidates[i], name) == 0)
+        {
+            rank[rank_index] = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+void record_preferences(int rank[])
+{
+    for (int i = 0; i < candidate_count; i++)
+    {
+        for (int j = i + 1; j < candidate_count; j++)
+        {
+            preferences[rank[i]][rank[j]]++;
+        }
+    }
+}
+
+void add_pairs(void)
+{
+    pair_count = 0;
+
+    for (int i = 0; i < candidate_count; i++)
+    {
+        for (int j = 0; j < candidate_count; j++)
+        {
+            if (preferences[i][j] > preferences[j][i])
+            {
+                pairs[pair_count].winner = i;
+                pairs[pair_count].loser = j;
+                pair_count++;
+            }
+        }
+    }
+}
+
+void sort_pairs(void)
+{
+    for (int i = 0; i < pair_count - 1; i++)
+    {
+        for (int j = i + 1; j < pair_count; j++)
+        {
+            int strength_i = preferences[pairs[i].winner][pairs[i].loser];
+            int strength_j = preferences[pairs[j].winner][pairs[j].loser];
+
+            if (strength_j > strength_i)
+            {
+                pair temp = pairs[i];
+                pairs[i] = pairs[j];
+                pairs[j] = temp;
+            }
+        }
+    }
+}
+
+bool creates_cycle(int winner, int loser)
+{
+    if (winner == loser)
+        return true;
+
+    for (int i = 0; i < candidate_count; i++)
+    {
+        if (locked[loser][i] && creates_cycle(winner, i))
+            return true;
+    }
+
+    return false;
+}
+
+void lock_pairs(void)
+{
+    for (int i = 0; i < pair_count; i++)
+    {
+        if (!creates_cycle(pairs[i].winner, pairs[i].loser))
+        {
+            locked[pairs[i].winner][pairs[i].loser] = true;
+        }
+    }
+}
+
+void print_winner(void)
+{
+    for (int i = 0; i < candidate_count; i++)
+    {
+        bool source = true;
+
+        for (int j = 0; j < candidate_count; j++)
+        {
+            if (locked[j][i])
+            {
+                source = false;
+                break;
+            }
+        }
+
+        if (source)
+        {
+            printf("\nWinner: %s\n", candidates[i]);
+            return;
+        }
+    }
+}
